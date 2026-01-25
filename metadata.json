@@ -1,0 +1,8 @@
+{
+  "name": "名古屋大冒險 NAGOYA PLAY",
+  "description": "A warm, Japanese journal-styled group travel planning PWA with collaborative scheduling, expense tracking, and journaling features.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
