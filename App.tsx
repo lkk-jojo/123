@@ -18,16 +18,11 @@ const tabs = [
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('schedule');
   const [showSyncModal, setShowSyncModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [tripId, setTripId] = useState(() => localStorage.getItem('shared_trip_id') || '');
   const [tempTripId, setTempTripId] = useState('');
 
-  // 監控部署環境與同步狀態
-  useEffect(() => {
-    if (tripId) {
-      console.log(`%c[Nagoya Play] 正在嘗試連線至同步代碼: ${tripId}`, "color: #A8B58F; font-weight: bold;");
-      console.log("%c[Tip] 目前為 LocalStorage 模擬同步模式。如需真正的多人即時編輯，請在專案中配置 Supabase API Key。", "color: #8B735B; font-style: italic;");
-    }
-  }, [tripId]);
+  const currentUrl = window.location.href;
 
   const handleSaveTripId = () => {
     const formattedId = tempTripId.trim().toUpperCase();
@@ -35,7 +30,6 @@ const App: React.FC = () => {
     localStorage.setItem('shared_trip_id', formattedId);
     setTripId(formattedId);
     setShowSyncModal(false);
-    // 未來在此處加入 Supabase Realtime 訂閱邏輯
   };
 
   const clearSync = () => {
@@ -43,6 +37,22 @@ const App: React.FC = () => {
       localStorage.removeItem('shared_trip_id');
       setTripId('');
       setShowSyncModal(false);
+    }
+  };
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: '名古屋大冒險 NAGOYA PLAY',
+          text: '快來加入我的名古屋旅行行程！',
+          url: currentUrl,
+        });
+      } catch (err) {
+        console.log('Share cancelled or failed');
+      }
+    } else {
+      setShowShareModal(true);
     }
   };
 
@@ -58,7 +68,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-24 text-[#5D534A] max-w-lg mx-auto bg-[#F7F4EB] shadow-2xl shadow-black/5">
+    <div className="min-h-screen pb-24 text-[#5D534A] max-w-lg mx-auto bg-[#F7F4EB] shadow-2xl shadow-black/5 relative">
       {/* Header */}
       <header className="p-6 pt-12 sticky top-0 bg-[#F7F4EB]/90 backdrop-blur-md z-50 flex justify-between items-center border-b border-[#E0E5D5]/50">
         <div>
@@ -67,10 +77,16 @@ const App: React.FC = () => {
             <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Feb 04 - Feb 08, 2026</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={handleNativeShare}
+            className="w-10 h-10 rounded-full bg-white border-2 border-[#E0E5D5] text-[#8B735B] flex items-center justify-center active:scale-90 transition-all"
+          >
+            <Icon name="share-nodes" className="text-sm" />
+          </button>
           <button 
             onClick={() => { setTempTripId(tripId); setShowSyncModal(true); }}
-            className={`px-3 py-1.5 rounded-full flex items-center gap-2 border-2 transition-all active:scale-90 ${tripId ? 'bg-[#B5C99A] border-[#B5C99A] text-white soft-shadow' : 'bg-white border-[#E0E5D5] text-[#8B735B]'}`}
+            className={`px-3 py-2 rounded-full flex items-center gap-2 border-2 transition-all active:scale-90 ${tripId ? 'bg-[#B5C99A] border-[#B5C99A] text-white soft-shadow' : 'bg-white border-[#E0E5D5] text-[#8B735B]'}`}
           >
             <Icon name={tripId ? "users" : "cloud"} className="text-xs" />
             <span className="text-[10px] font-black">{tripId ? tripId : '同步'}</span>
@@ -82,6 +98,38 @@ const App: React.FC = () => {
       <main className="px-4 pt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {renderContent()}
       </main>
+
+      {/* Share Modal with QR Code */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6" onClick={() => setShowShareModal(false)}>
+          <Card className="w-full max-w-xs flex flex-col items-center gap-6 p-8 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="text-center">
+              <h3 className="text-xl font-black italic">手機掃描開啟</h3>
+              <p className="text-[10px] opacity-60 mt-2 uppercase tracking-widest font-bold">Scan to open on phone</p>
+            </div>
+            
+            <div className="p-4 bg-white rounded-[2rem] border-4 border-[#F7F4EB] soft-shadow">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(currentUrl)}&bgcolor=FFFFFF&color=5D534A&margin=10`}
+                alt="QR Code"
+                className="w-40 h-40"
+              />
+            </div>
+
+            <div className="w-full flex flex-col gap-3">
+              <Button onClick={() => {
+                navigator.clipboard.writeText(currentUrl);
+                alert('連結已複製！');
+              }} className="w-full">
+                複製網址
+              </Button>
+              <Button variant="ghost" onClick={() => setShowShareModal(false)} className="w-full border-none opacity-60">
+                關閉
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Sync Modal */}
       {showSyncModal && (
