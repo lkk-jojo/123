@@ -15,8 +15,9 @@ const PlanningPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'todo' | 'luggage' | 'shopping'>('todo');
   const [newItemText, setNewItemText] = useState('');
   const [editingItem, setEditingItem] = useState<PlanningItem | null>(null);
+  const tripId = localStorage.getItem('shared_trip_id');
 
-  // 1. 初始化狀態：優先從 localStorage 讀取，若無則使用預設值
+  // 初始化狀態
   const [items, setItems] = useState<{
     todo: PlanningItem[];
     luggage: PlanningItem[];
@@ -49,10 +50,16 @@ const PlanningPage: React.FC = () => {
     };
   });
 
-  // 2. 當 items 改變時，自動存入 localStorage
+  // 當 items 改變時，自動存入 localStorage 
+  // 如果有 tripId，這裡未來可以呼叫 Supabase API 實現真正的雲端同步
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
+    
+    // 假裝同步到雲端 (Mock Cloud Sync)
+    if (tripId) {
+       console.log(`[Cloud Sync] Syncing data to Trip: ${tripId}`);
+    }
+  }, [items, tripId]);
 
   const toggleComplete = (id: number) => {
     setItems(prev => ({
@@ -103,6 +110,17 @@ const PlanningPage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Sync Banner */}
+      {tripId && (
+        <div className="bg-[#B5C99A]/20 border border-[#B5C99A] rounded-2xl p-3 flex items-center justify-between mx-1">
+           <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-[#B5C99A] rounded-full animate-ping"></div>
+              <p className="text-[10px] font-black text-[#5D534A] opacity-60">雲端同步中: {tripId}</p>
+           </div>
+           <Icon name="cloud-check" className="text-[#B5C99A]" />
+        </div>
+      )}
+
       {/* Sub-tab Navigation */}
       <div className="flex bg-white p-1 rounded-full border-2 border-[#E0E5D5] soft-shadow">
         {(['todo', 'luggage', 'shopping'] as const).map(tab => (
@@ -128,11 +146,9 @@ const PlanningPage: React.FC = () => {
             </span>
          </div>
 
-         {/* Items List */}
          <div className="flex flex-col gap-3">
             {items[activeTab].length > 0 ? items[activeTab].map(item => (
                 <div key={item.id} className="flex items-start gap-3 p-3 transition-all bg-[#F7F4EB]/30 hover:bg-[#F7F4EB] rounded-2xl group border border-transparent hover:border-[#E0E5D5]">
-                    {/* Checkbox */}
                     <button 
                       onClick={() => toggleComplete(item.id)}
                       className={`w-8 h-8 rounded-full border-2 border-[#A8B58F] flex-shrink-0 flex items-center justify-center transition-all mt-0.5 ${item.completed ? 'bg-[#A8B58F] text-white rotate-[360deg]' : 'bg-white'}`}
@@ -140,7 +156,6 @@ const PlanningPage: React.FC = () => {
                         {item.completed && <Icon name="check" />}
                     </button>
                     
-                    {/* Text content - Optimized for wrapping */}
                     <div className="flex-grow min-w-0 py-0.5" onClick={() => setEditingItem(item)}>
                         <p className={`font-bold text-sm break-words leading-relaxed ${item.completed ? 'line-through opacity-40 italic' : ''}`}>
                             {item.text}
@@ -152,20 +167,9 @@ const PlanningPage: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">
-                      <button 
-                        onClick={() => setEditingItem(item)}
-                        className="w-8 h-8 rounded-full bg-white border border-[#E0E5D5] text-[#8B735B] flex items-center justify-center text-xs active:scale-90"
-                      >
-                        <Icon name="pen" />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="w-8 h-8 rounded-full bg-white border border-[#E0E5D5] text-red-400 flex items-center justify-center text-xs active:scale-90"
-                      >
-                        <Icon name="trash" />
-                      </button>
+                      <button onClick={() => setEditingItem(item)} className="w-8 h-8 rounded-full bg-white border border-[#E0E5D5] text-[#8B735B] flex items-center justify-center text-xs active:scale-90"><Icon name="pen" /></button>
+                      <button onClick={() => handleDeleteItem(item.id)} className="w-8 h-8 rounded-full bg-white border border-[#E0E5D5] text-red-400 flex items-center justify-center text-xs active:scale-90"><Icon name="trash" /></button>
                     </div>
                 </div>
             )) : (
@@ -176,7 +180,6 @@ const PlanningPage: React.FC = () => {
             )}
          </div>
 
-         {/* Add Item Form */}
          <form onSubmit={handleAddItem} className="absolute bottom-5 left-5 right-5 flex gap-2 bg-white/50 backdrop-blur-sm pt-2">
             <input 
                 type="text" 
@@ -191,7 +194,6 @@ const PlanningPage: React.FC = () => {
          </form>
       </Card>
 
-      {/* Edit Modal */}
       {editingItem && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
           <Card className="w-full max-w-sm animate-in zoom-in-95 duration-200">

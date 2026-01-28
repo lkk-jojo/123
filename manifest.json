@@ -1,0 +1,21 @@
+
+{
+  "short_name": "名古屋PLAY",
+  "name": "名古屋大冒險 NAGOYA PLAY",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/nagoya/192/192",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://picsum.photos/seed/nagoya/512/512",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#F7F4EB",
+  "background_color": "#F7F4EB"
+}

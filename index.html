@@ -3,8 +3,12 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>森之旅 Forest Travel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#F7F4EB">
+  <link rel="manifest" href="manifest.json">
+  <title>名古屋大冒險 NAGOYA PLAY</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,19 +20,19 @@
       background-image: radial-gradient(#E0E5D5 1px, transparent 1px);
       background-size: 20px 20px;
       -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: none;
     }
     .soft-shadow {
       box-shadow: 4px 4px 0px #E0E5D5;
     }
-    .boarding-pass-mask {
-      mask-image: radial-gradient(circle at 0 50%, transparent 10px, black 10px),
-                  radial-gradient(circle at 100% 50%, transparent 10px, black 10px);
-      mask-position: left, right;
-      mask-size: 50% 100%;
-      mask-repeat: no-repeat;
-    }
     ::-webkit-scrollbar {
       display: none;
+    }
+    .safe-top {
+      padding-top: env(safe-area-inset-top);
+    }
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom);
     }
   </style>
 <script type="importmap">
@@ -36,12 +40,13 @@
   "imports": {
     "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
   }
 }
 </script>
 </head>
-<body>
+<body class="safe-top safe-bottom">
   <div id="root"></div>
 </body>
 </html>
