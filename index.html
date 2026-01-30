@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#F7F4EB">
@@ -34,7 +35,6 @@
     .safe-bottom {
       padding-bottom: env(safe-area-inset-bottom);
     }
-    /* 防止手機長按選取 */
     * {
       -webkit-user-select: none;
       -webkit-touch-callout: none;
@@ -46,9 +46,9 @@
 <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.4/",
     "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
     "vite": "https://esm.sh/vite@^7.3.1",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
   }
@@ -56,8 +56,12 @@
 </script>
 </head>
 <body class="safe-top safe-bottom">
-  <div id="root"></div>
-  <!-- 修正路徑為 ./index.tsx，讓 Vite 處理編譯 -->
-  <script type="module" src="./index.tsx"></script>
+  <div id="root">
+    <!-- 在 React 載入前顯示簡單的 Loading 防止白屏感 -->
+    <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: #8B735B; font-weight: bold; font-family: sans-serif;">
+      Loading Nagoya Play...
+    </div>
+  </div>
+  <script type="module" src="/index.tsx"></script>
 </body>
 </html>
