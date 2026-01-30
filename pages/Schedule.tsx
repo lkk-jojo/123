@@ -18,7 +18,6 @@ const SchedulePage: React.FC = () => {
   const tripStartDate = '2026-02-04';
   const [selectedDate, setSelectedDate] = useState(tripStartDate);
   
-  // 初始化：從本地讀取或使用預設
   const [items, setItems] = useState<any[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_SCHEDULE);
     return saved ? JSON.parse(saved) : MOCK_SCHEDULE;
@@ -27,7 +26,6 @@ const SchedulePage: React.FC = () => {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isAdding, setIsAdding] = useState(false);
 
-  // 存儲變化
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_SCHEDULE, JSON.stringify(items));
   }, [items]);
@@ -74,7 +72,7 @@ const SchedulePage: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    if(window.confirm('確定要刪除這個行程嗎？')) {
+    if(window.confirm('確定要刪除？')) {
       setItems(prev => prev.filter(item => item.id !== id));
       setEditingItem(null);
     }
@@ -88,103 +86,103 @@ const SchedulePage: React.FC = () => {
   const categories: Category[] = ['attraction', 'food', 'transport', 'hotel', 'entertainment'];
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 scrollbar-hide">
+    <div className="flex flex-col gap-2"> {/* 整體 gap 縮小 (3 -> 2) */}
+      {/* 頂部日期選單：維持大尺寸，壓縮下邊距 */}
+      <div className="flex overflow-x-auto gap-2 pb-1.5 -mx-4 px-4 scrollbar-hide">
         {dates.map((date, idx) => {
           const isSelected = selectedDate === date;
           return (
             <button
               key={date}
               onClick={() => setSelectedDate(date)}
-              className={`flex-shrink-0 w-20 h-24 rounded-3xl border-2 flex flex-col items-center justify-center transition-all ${
+              className={`flex-shrink-0 w-16 h-[4.6rem] rounded-2xl border-2 flex flex-col items-center justify-center transition-all ${
                 isSelected ? 'bg-[#A8B58F] border-[#A8B58F] text-white scale-105 soft-shadow' : 'bg-white border-[#E0E5D5]'
               }`}
             >
-              <span className="text-xs font-bold opacity-60">Day {idx + 1}</span>
-              <span className="text-2xl font-black">{date.split('-')[2]}</span>
-              <span className="text-[10px] uppercase font-bold">Feb</span>
+              <span className="text-[9px] font-bold opacity-60 uppercase leading-none">D{idx + 1}</span>
+              <span className="text-xl font-black leading-none my-0.5">{date.split('-')[2]}</span>
+              <span className="text-[8px] uppercase font-bold opacity-60 leading-none">Feb</span>
             </button>
           );
         })}
       </div>
 
-      <Card className="flex items-center justify-between bg-gradient-to-r from-[#87A2FB] to-[#B5C99A] text-white border-none relative overflow-hidden">
-        <div className="absolute -right-2 -bottom-2 opacity-20 text-6xl rotate-12"><Icon name="sun" /></div>
-        <div className="flex items-center gap-4 relative z-10">
-          <div className="text-4xl animate-bounce duration-[3000ms]">❄️</div>
+      {/* 天氣卡片：極致壓縮 Padding (3.5 -> 2) 與 Gap (3 -> 2) */}
+      <Card className="flex items-center justify-between bg-gradient-to-r from-[#87A2FB] to-[#B5C99A] text-white border-none relative overflow-hidden p-2.5">
+        <div className="absolute -right-2 -bottom-1 opacity-20 text-5xl rotate-12"><Icon name="sun" /></div>
+        <div className="flex items-center gap-2 relative z-10">
+          <div className="text-xl">❄️</div>
           <div>
-            <h3 className="font-bold">今日天氣：晴</h3>
-            <p className="text-sm opacity-80">8°C / 2°C • 名古屋冬日</p>
+            <h3 className="font-bold text-[11px] leading-tight">今日：晴</h3>
+            <p className="text-[9px] opacity-80">8°C / 2°C • 名古屋</p>
           </div>
         </div>
-        <div className="text-right relative z-10">
-          <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Distance</p>
-          <p className="text-2xl font-black italic">{countdownText}</p>
+        <div className="text-right relative z-10 pr-1">
+          <p className="text-[8px] font-black uppercase tracking-widest opacity-70 leading-none">Status</p>
+          <p className="text-base font-black italic leading-tight">{countdownText}</p>
         </div>
       </Card>
 
-      <div className="relative pl-4">
+      {/* 行程列表：壓縮垂直距離與 Padding */}
+      <div className="relative pl-4 mt-0.5">
         <div className="absolute left-[23px] top-0 bottom-0 w-1 bg-[#E0E5D5] rounded-full"></div>
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-[0.45rem]"> {/* 垂直間距縮小 30% (0.65 -> 0.45) */}
           {filteredItems.length > 0 ? filteredItems.map((item) => (
-            <div key={item.id} className="relative flex gap-6 group">
+            <div key={item.id} className="relative flex gap-3 group">
               <div className="mt-2 w-5 h-5 rounded-full bg-white border-4 border-[#A8B58F] z-10 flex-shrink-0"></div>
-              <Card className="flex-grow p-4 relative group hover:border-[#A8B58F] transition-colors">
-                <button onClick={() => setEditingItem({ ...item })} className="absolute top-4 right-4 text-[#8B735B] opacity-0 group-hover:opacity-100 transition-opacity bg-[#F7F4EB] w-8 h-8 rounded-full flex items-center justify-center border border-[#E0E5D5]">
-                  <Icon name="pen" className="text-xs" />
+              <Card className="flex-grow p-2 relative group hover:border-[#A8B58F] transition-colors">
+                <button onClick={() => setEditingItem({ ...item })} className="absolute top-1 right-1 text-[#8B735B] opacity-0 group-hover:opacity-100 transition-opacity bg-[#F7F4EB] w-6 h-6 rounded-full flex items-center justify-center border border-[#E0E5D5] z-20">
+                  <Icon name="pen" className="text-[9px]" />
                 </button>
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-sm font-black text-[#8B735B]">{item.time}</span>
+                <div className="flex justify-between items-start mb-0">
+                  <span className="text-[11px] font-black text-[#8B735B]">{item.time}</span>
                   <Badge color={COLORS.categories[item.category as keyof typeof COLORS.categories] || '#A8B58F'}>
-                    {CATEGORY_LABELS[item.category as Category] || item.category}
+                    <span className="text-[9px] leading-none">{CATEGORY_LABELS[item.category as Category] || item.category}</span>
                   </Badge>
                 </div>
-                <h4 className="font-bold text-lg mb-1">{item.title}</h4>
-                <div className="flex justify-between items-end mt-2">
-                  <p className="text-xs text-opacity-60 flex items-center gap-1 italic max-w-[60%]">
-                    <Icon name="location-dot" className="text-[#A8B58F]" /> <span className="truncate">{item.location}</span>
+                <h4 className="font-bold text-sm mb-0.5 leading-tight pr-6 text-[#5D534A]">{item.title}</h4>
+                <div className="flex justify-between items-end mt-1">
+                  <p className="text-[10px] text-opacity-60 flex items-center gap-1 italic max-w-[65%]">
+                    <Icon name="location-dot" className="text-[#A8B58F] text-[9px]" /> <span className="truncate">{item.location}</span>
                   </p>
-                  <button onClick={() => openGoogleMaps(item.location)} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F7F4EB] hover:bg-[#A8B58F] hover:text-white text-[#8B735B] rounded-full text-[10px] font-black transition-all border border-[#E0E5D5]">
-                    <Icon name="map-location-dot" /> <span>地圖</span>
+                  <button onClick={() => openGoogleMaps(item.location)} className="flex items-center gap-1 px-2 py-0.5 bg-[#F7F4EB] hover:bg-[#A8B58F] hover:text-white text-[#8B735B] rounded-full text-[8px] font-black transition-all border border-[#E0E5D5]">
+                    <Icon name="map-location-dot" /> <span>導航</span>
                   </button>
                 </div>
               </Card>
             </div>
           )) : (
-            <div className="py-10 text-center opacity-50 italic">今天還沒有行程喔</div>
+            <div className="py-6 text-center opacity-50 italic text-[11px]">暫無行程</div>
           )}
         </div>
       </div>
       
+      {/* Modals & Add Button */}
       {(editingItem || isAdding) && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
-          <Card className="w-full max-w-md">
-            <h3 className="text-xl font-black mb-6 text-center italic">{isAdding ? '開啟新的冒險' : '編輯冒險行程'}</h3>
-            <form onSubmit={isAdding ? handleSaveNew : handleSaveEdit} className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold opacity-60">時間</label>
-                  <input type="time" required value={isAdding ? newItem.time : editingItem.time} onChange={e => isAdding ? setNewItem({...newItem, time: e.target.value}) : setEditingItem({...editingItem, time: e.target.value})} className="bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-xl p-3 text-sm font-bold" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold opacity-60">類別</label>
-                  <select value={isAdding ? newItem.category : editingItem.category} onChange={e => isAdding ? setNewItem({...newItem, category: e.target.value as Category}) : setEditingItem({...editingItem, category: e.target.value})} className="bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-xl p-3 text-sm font-bold">
-                    {categories.map(cat => <option key={cat} value={cat}>{CATEGORY_LABELS[cat]}</option>)}
-                  </select>
-                </div>
+          <Card className="w-full max-w-md p-5">
+            <h3 className="text-lg font-black mb-4 text-center italic">{isAdding ? '新冒險' : '編輯行程'}</h3>
+            <form onSubmit={isAdding ? handleSaveNew : handleSaveEdit} className="flex flex-col gap-2.5">
+              <div className="grid grid-cols-2 gap-2">
+                <input type="time" required value={isAdding ? newItem.time : editingItem.time} onChange={e => isAdding ? setNewItem({...newItem, time: e.target.value}) : setEditingItem({...editingItem, time: e.target.value})} className="bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-xl p-2.5 text-xs font-bold" />
+                <select value={isAdding ? newItem.category : editingItem.category} onChange={e => isAdding ? setNewItem({...newItem, category: e.target.value as Category}) : setEditingItem({...editingItem, category: e.target.value})} className="bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-xl p-2.5 text-xs font-bold">
+                  {categories.map(cat => <option key={cat} value={cat}>{CATEGORY_LABELS[cat]}</option>)}
+                </select>
               </div>
-              <input type="text" required placeholder="標題" value={isAdding ? newItem.title : editingItem.title} onChange={e => isAdding ? setNewItem({...newItem, title: e.target.value}) : setEditingItem({...editingItem, title: e.target.value})} className="bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-xl p-3 text-sm font-bold" />
-              <input type="text" required placeholder="地點" value={isAdding ? newItem.location : editingItem.location} onChange={e => isAdding ? setNewItem({...newItem, location: e.target.value}) : setEditingItem({...editingItem, location: e.target.value})} className="bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-xl p-3 text-sm font-bold" />
-              <div className="flex gap-4 mt-4">
-                {!isAdding && <Button variant="ghost" className="text-red-400" onClick={() => handleDelete(editingItem.id)}><Icon name="trash" /></Button>}
+              <input type="text" required placeholder="標題" value={isAdding ? newItem.title : editingItem.title} onChange={e => isAdding ? setNewItem({...newItem, title: e.target.value}) : setEditingItem({...editingItem, title: e.target.value})} className="bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-xl p-2.5 text-xs font-bold" />
+              <input type="text" required placeholder="地點" value={isAdding ? newItem.location : editingItem.location} onChange={e => isAdding ? setNewItem({...newItem, location: e.target.value}) : setEditingItem({...editingItem, location: e.target.value})} className="bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-xl p-2.5 text-xs font-bold" />
+              <div className="flex gap-2 mt-2">
+                {!isAdding && <Button variant="ghost" className="p-2.5" onClick={() => handleDelete(editingItem.id)}><Icon name="trash" className="text-red-400" /></Button>}
                 <Button variant="ghost" className="flex-1" onClick={() => { setEditingItem(null); setIsAdding(false); }}>取消</Button>
-                <Button type="submit" className="flex-grow">{isAdding ? '加入' : '儲存'}</Button>
+                <Button type="submit" className="flex-grow">儲存</Button>
               </div>
             </form>
           </Card>
         </div>
       )}
-      <button onClick={() => setIsAdding(true)} className="fixed bottom-24 right-6 w-14 h-14 bg-[#8B735B] text-white rounded-full flex items-center justify-center text-2xl soft-shadow z-[110]"><Icon name="plus" /></button>
+      <button onClick={() => setIsAdding(true)} className="fixed bottom-20 right-5 w-12 h-12 bg-[#8B735B] text-white rounded-full flex items-center justify-center text-xl soft-shadow z-[110] active:scale-90 transition-transform">
+        <Icon name="plus" />
+      </button>
     </div>
   );
 };

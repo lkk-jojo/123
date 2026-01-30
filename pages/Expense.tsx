@@ -1,10 +1,9 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, Badge, Button, Icon } from '../components/UI';
-import { COLORS } from '../constants';
 
 interface ExpenseItem {
-  id: number;
+  id: string; // 強制為字串
   title: string;
   amount: number;
   currency: string;
@@ -25,138 +24,321 @@ const CATEGORIES = [
   { label: '購物', icon: 'bag-shopping', color: '#E9D5CA' },
 ];
 
-const PAYERS = ['媽媽', 'Jimmy', 'Cindy', '爸爸'];
-const PAYMENT_METHODS = ['suica卡', '現金', '刷卡'];
+const PAYERS = ['爸爸', '媽媽', 'Jimmy', 'Cindy'];
+const PAYMENT_METHODS = ['現金', '刷卡'];
 
 const ExpensePage: React.FC = () => {
   const [expenses, setExpenses] = useState<ExpenseItem[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_EXPENSE);
-    return saved ? JSON.parse(saved) : [
-      { id: 1, title: '矢場炸豬排', amount: 3500, currency: 'JPY', category: '美食', payer: 'Jimmy', paymentMethod: '刷卡', date: '2026-02-04' },
-      { id: 2, title: '名古屋地鐵', amount: 500, currency: 'JPY', category: '交通', payer: '媽媽', paymentMethod: 'suica卡', date: '2026-02-04' },
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // 初始化時強制將所有 ID 轉為字串
+          return parsed.map(item => ({ ...item, id: String(item.id) }));
+        }
+      } catch (e) {
+        console.error("Parse failed", e);
+      }
+    }
+    return [
+      { id: '1', title: '矢場炸豬排', amount: 3500, currency: 'JPY', category: '美食', payer: 'Jimmy', paymentMethod: '刷卡', date: '2026-02-04' },
+      { id: '2', title: '名古屋地鐵', amount: 500, currency: 'JPY', category: '交通', payer: '媽媽', paymentMethod: '現金', date: '2026-02-04' },
     ];
   });
+
+  // 追蹤「哪一筆正處於確認刪除狀態」
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_EXPENSE, JSON.stringify(expenses));
   }, [expenses]);
 
-  const [isAdding, setIsAdding] = useState(false);
-  const [newExpense, setNewExpense] = useState({
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<ExpenseItem | null>(null);
+  const [formData, setFormData] = useState({
     title: '',
     amount: '',
     category: '美食',
-    payer: 'Jimmy',
-    paymentMethod: 'suica卡'
+    payer: '爸爸',
+    paymentMethod: '現金'
   });
 
   const exchangeRate = 0.21;
-  const budgetGoal = 200000;
   const totalJPY = useMemo(() => expenses.reduce((sum, item) => sum + item.amount, 0), [expenses]);
   const totalTWD = Math.round(totalJPY * exchangeRate);
-  const progress = Math.min((totalJPY / budgetGoal) * 100, 100);
 
-  const handleAddSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newExpense.title || !newExpense.amount) return;
-    const item: ExpenseItem = {
-      id: Date.now(),
-      title: newExpense.title,
-      amount: parseFloat(newExpense.amount),
-      currency: 'JPY',
-      category: newExpense.category,
-      payer: newExpense.payer,
-      paymentMethod: newExpense.paymentMethod,
-      date: new Date().toISOString().split('T')[0]
-    };
-    setExpenses([item, ...expenses]);
-    setIsAdding(false);
-    setNewExpense({ title: '', amount: '', category: '美食', payer: 'Jimmy', paymentMethod: 'suica卡' });
+  const payerStats = useMemo(() => {
+    const stats: Record<string, number> = {};
+    PAYERS.forEach(p => stats[p] = 0);
+    expenses.forEach(exp => {
+      if (stats[exp.payer] !== undefined) stats[exp.payer] += exp.amount;
+    });
+    return stats;
+  }, [expenses]);
+
+  const handleOpenAdd = () => {
+    setEditingItem(null);
+    setFormData({ title: '', amount: '', category: '美食', payer: '爸爸', paymentMethod: '現金' });
+    setConfirmDeleteId(null);
+    setIsModalOpen(true);
   };
 
-  const deleteExpense = (id: number) => {
-    if(window.confirm('確定刪除這筆開支？')) {
-      setExpenses(prev => prev.filter(e => e.id !== id));
+  const handleOpenEdit = (expense: ExpenseItem) => {
+    setEditingItem(expense);
+    setFormData({
+      title: expense.title,
+      amount: expense.amount.toString(),
+      category: expense.category,
+      payer: expense.payer,
+      paymentMethod: expense.paymentMethod
+    });
+    setConfirmDeleteId(null);
+    setIsModalOpen(true);
+  };
+
+  // 核心刪除函式：不再彈窗，直接對傳入 ID 進行過濾
+  const executeFinalDelete = (id: string) => {
+    const targetId = String(id);
+    const newExpenses = expenses.filter(item => String(item.id) !== targetId);
+    setExpenses(newExpenses);
+    localStorage.setItem(STORAGE_KEY_EXPENSE, JSON.stringify(newExpenses)); // 強制立即同步
+    
+    // 清除所有狀態
+    setConfirmDeleteId(null);
+    setIsModalOpen(false);
+    setEditingItem(null);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amountNum = parseFloat(formData.amount);
+    if (!formData.title || isNaN(amountNum)) return;
+
+    if (editingItem) {
+      setExpenses(prev => prev.map(exp => String(exp.id) === String(editingItem.id) ? {
+        ...exp,
+        title: formData.title,
+        amount: amountNum,
+        category: formData.category,
+        payer: formData.payer,
+        paymentMethod: formData.paymentMethod
+      } : exp));
+    } else {
+      const newItem: ExpenseItem = {
+        id: String(Date.now()), // 確保 ID 是字串
+        title: formData.title,
+        amount: amountNum,
+        currency: 'JPY',
+        category: formData.category,
+        payer: formData.payer,
+        paymentMethod: formData.paymentMethod,
+        date: new Date().toISOString().split('T')[0]
+      };
+      setExpenses([newItem, ...expenses]);
     }
+    setIsModalOpen(false);
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <Card className="bg-[#8B735B] text-white border-none flex flex-col gap-4 shadow-lg overflow-hidden relative">
+    <div className="flex flex-col gap-2 pb-24">
+      {/* 總額摘要 */}
+      <Card className="bg-[#8B735B] text-white border-none p-4 shadow-lg relative overflow-hidden">
         <div className="absolute -right-4 -top-4 opacity-10 text-8xl rotate-12"><Icon name="coins" /></div>
-        <div className="flex justify-between items-center relative z-10">
-          <p className="text-sm font-bold opacity-80 italic">名古屋總支出</p>
-          <Badge color="#B5C99A">JPY to TWD</Badge>
+        <div className="relative z-10">
+          <p className="text-[10px] font-black opacity-70 uppercase tracking-widest mb-1 text-white/80">Total Spending</p>
+          <div className="flex justify-between items-end">
+            <div>
+              <h2 className="text-3xl font-black italic leading-none">¥ {totalJPY.toLocaleString()}</h2>
+              <p className="text-xs font-bold opacity-80 mt-1">≈ TWD {totalTWD.toLocaleString()}</p>
+            </div>
+            <Badge color="#B5C99A"><span className="text-[10px]">Rate 0.21</span></Badge>
+          </div>
         </div>
-        <div className="flex flex-col relative z-10">
-            <h2 className="text-4xl font-black italic">¥ {totalJPY.toLocaleString()}</h2>
-            <p className="text-lg font-bold opacity-80 mt-1">≈ TWD {totalTWD.toLocaleString()}</p>
-        </div>
-        <div className="mt-2 w-full h-3 bg-white/20 rounded-full overflow-hidden relative z-10">
-            <div className="h-full bg-[#B5C99A] transition-all duration-1000 ease-out" style={{ width: `${progress}%` }}></div>
-        </div>
-        <p className="text-xs opacity-60 relative z-10">預算目標：¥ {budgetGoal.toLocaleString()}</p>
       </Card>
 
-      <div className="flex flex-col gap-4">
-        {expenses.map(exp => {
-          const catInfo = CATEGORIES.find(c => c.label === exp.category) || CATEGORIES[0];
-          return (
-            <Card key={exp.id} className="flex justify-between items-center py-4 relative group">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white soft-shadow" style={{ backgroundColor: catInfo.color }}><Icon name={catInfo.icon} /></div>
-                <div>
-                  <h4 className="font-bold text-[#5D534A]">{exp.title}</h4>
-                  <div className="flex flex-wrap items-center gap-x-2 text-[10px] font-bold opacity-40">
-                    <span>{exp.date}</span>
-                    <span className="text-[#A8B58F]">by {exp.payer}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="text-right flex flex-col items-end gap-1">
-                <p className="font-black text-lg text-[#8B735B]">¥ {exp.amount.toLocaleString()}</p>
-                <button onClick={() => deleteExpense(exp.id)} className="opacity-0 group-hover:opacity-100 text-red-300 text-xs transition-opacity"><Icon name="trash-can" /></button>
-              </div>
-            </Card>
-          );
-        })}
+      {/* 成員支出統計 */}
+      <div className="grid grid-cols-2 gap-2">
+        {PAYERS.map(payer => (
+          <div key={payer} className="bg-white rounded-2xl p-3 border-2 border-[#E0E5D5] flex justify-between items-center soft-shadow">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <div className="w-7 h-7 rounded-full bg-[#F7F4EB] flex items-center justify-center text-[10px] font-black text-[#8B735B] flex-shrink-0 border border-[#E0E5D5]">{payer[0]}</div>
+              <span className="text-xs font-black text-[#5D534A] truncate">{payer}</span>
+            </div>
+            <span className="text-xs font-black text-[#8B735B]">¥{payerStats[payer].toLocaleString()}</span>
+          </div>
+        ))}
       </div>
 
-      {isAdding && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
-          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-black mb-6 text-center italic">新增支出</h3>
-            <form onSubmit={handleAddSubmit} className="flex flex-col gap-5">
-              <input type="text" required placeholder="項目名稱" value={newExpense.title} onChange={e => setNewExpense({...newExpense, title: e.target.value})} className="bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-2xl p-4 text-sm font-bold focus:outline-none focus:border-[#A8B58F]" />
-              <div className="grid grid-cols-2 gap-4">
-                <input type="number" inputMode="decimal" required placeholder="金額 (JPY)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className="bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-2xl p-4 text-sm font-bold focus:outline-none focus:border-[#A8B58F]" />
-                <div className="bg-[#E0E5D5]/30 rounded-2xl p-4 text-sm font-bold flex items-center">≈ TWD {newExpense.amount ? Math.round(parseFloat(newExpense.amount) * exchangeRate).toLocaleString() : 0}</div>
+      {/* 支出清單 */}
+      <div className="flex flex-col gap-2 mt-2">
+        {expenses.length > 0 ? expenses.map(exp => {
+          const catInfo = CATEGORIES.find(c => c.label === exp.category) || CATEGORIES[0];
+          const isConfirming = confirmDeleteId === exp.id;
+
+          return (
+            <div key={exp.id} className="relative">
+              <Card className="p-0 overflow-hidden border-2 border-[#E0E5D5] soft-shadow rounded-3xl">
+                <div className="flex items-stretch min-h-[72px]">
+                  {/* 主要區域：點擊開啟編輯 */}
+                  <div 
+                    className={`flex-grow flex justify-between items-center py-3 px-4 cursor-pointer active:bg-[#F7F4EB] transition-colors ${isConfirming ? 'opacity-20' : 'opacity-100'}`}
+                    onClick={() => !isConfirming && handleOpenEdit(exp)}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white flex-shrink-0" style={{ backgroundColor: catInfo.color }}>
+                        <Icon name={catInfo.icon} className="text-sm" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-sm text-[#5D534A] leading-tight truncate">{exp.title}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[9px] font-black text-[#A8B58F]">{exp.payer}</span>
+                          <Badge color="#F7F4EB"><span className="text-[#8B735B] text-[8px]">{exp.paymentMethod}</span></Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right mr-1">
+                      <p className="font-black text-sm text-[#8B735B]">¥{exp.amount.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  
+                  {/* 刪除按鈕：二段式確認 UI */}
+                  <div className="flex border-l border-[#E0E5D5]">
+                    {isConfirming ? (
+                      <>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }}
+                          className="w-12 flex items-center justify-center bg-gray-50 text-gray-400"
+                        >
+                          <Icon name="xmark" />
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); executeFinalDelete(exp.id); }}
+                          className="w-16 flex items-center justify-center bg-red-500 text-white font-black text-[10px] animate-pulse"
+                        >
+                          刪除
+                        </button>
+                      </>
+                    ) : (
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setConfirmDeleteId(exp.id);
+                        }}
+                        className="w-14 flex items-center justify-center text-red-200 hover:text-red-500 transition-colors group"
+                      >
+                        <Icon name="trash-can" className="text-lg group-active:scale-125 transition-transform" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            </div>
+          );
+        }) : (
+          <div className="py-20 text-center opacity-30 italic text-sm">尚無支出紀錄</div>
+        )}
+      </div>
+
+      {/* 新增/修改彈窗 */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-center justify-center p-6" onClick={() => setIsModalOpen(false)}>
+          <Card className="w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-lg font-black italic">{editingItem ? '編輯紀錄' : '新增紀錄'}</h3>
+              <button type="button" onClick={() => setIsModalOpen(false)} className="text-[#8B735B] opacity-40">
+                <Icon name="xmark" className="text-xl" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black opacity-40 uppercase ml-1">項目</label>
+                <input 
+                  type="text" required placeholder="如：名古屋雞翅" 
+                  value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} 
+                  className="w-full bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-2xl p-3 text-sm font-bold focus:outline-none focus:border-[#A8B58F]" 
+                />
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold opacity-60">類別</label>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                    {CATEGORIES.map(cat => (
-                        <button key={cat.label} type="button" onClick={() => setNewExpense({...newExpense, category: cat.label})} className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border-2 ${newExpense.category === cat.label ? 'bg-[#A8B58F] border-[#A8B58F] text-white' : 'bg-white border-[#E0E5D5] text-[#8B735B]'}`}>{cat.label}</button>
-                    ))}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black opacity-40 uppercase ml-1">日幣金額</label>
+                  <input 
+                    type="number" inputMode="decimal" required placeholder="0" 
+                    value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} 
+                    className="w-full bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-2xl p-3 text-sm font-bold focus:outline-none focus:border-[#A8B58F]" 
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black opacity-40 uppercase ml-1">分類</label>
+                  <select 
+                    value={formData.category} 
+                    onChange={e => setFormData({...formData, category: e.target.value})} 
+                    className="w-full bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-2xl p-3 text-sm font-bold"
+                  >
+                    {CATEGORIES.map(cat => <option key={cat.label} value={cat.label}>{cat.label}</option>)}
+                  </select>
                 </div>
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold opacity-60">支付人</label>
-                <div className="grid grid-cols-2 gap-2">
-                    {PAYERS.map(p => (
-                        <button key={p} type="button" onClick={() => setNewExpense({...newExpense, payer: p})} className={`py-3 rounded-xl text-xs font-bold border-2 ${newExpense.payer === p ? 'bg-[#8B735B] border-[#8B735B] text-white' : 'bg-white border-[#E0E5D5] text-[#8B735B]'}`}>{p}</button>
-                    ))}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black opacity-40 uppercase ml-1">付款人</label>
+                  <select 
+                    value={formData.payer} 
+                    onChange={e => setFormData({...formData, payer: e.target.value})} 
+                    className="w-full bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-2xl p-3 text-sm font-bold"
+                  >
+                    {PAYERS.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black opacity-40 uppercase ml-1">支付方式</label>
+                  <select 
+                    value={formData.paymentMethod} 
+                    onChange={e => setFormData({...formData, paymentMethod: e.target.value})} 
+                    className="w-full bg-[#F7F4EB] border-2 border-[#E0E5D5] rounded-2xl p-3 text-sm font-bold"
+                  >
+                    {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
                 </div>
               </div>
-              <div className="flex gap-4 mt-2">
-                <Button variant="ghost" className="flex-1" onClick={() => setIsAdding(false)}>取消</Button>
-                <Button type="submit" className="flex-1">確認</Button>
+
+              <div className="flex gap-2 mt-4">
+                {editingItem && (
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    className="w-14 p-0 border-red-100 text-red-400 hover:bg-red-50 active:scale-95" 
+                    onClick={() => {
+                        if (confirmDeleteId === editingItem.id) {
+                            executeFinalDelete(editingItem.id);
+                        } else {
+                            setConfirmDeleteId(editingItem.id);
+                        }
+                    }}
+                  >
+                    <Icon name={confirmDeleteId === editingItem.id ? "check" : "trash"} className={confirmDeleteId === editingItem.id ? "animate-bounce" : ""} />
+                  </Button>
+                )}
+                <Button variant="ghost" className="flex-1" onClick={() => setIsModalOpen(false)}>取消</Button>
+                <Button type="submit" className="flex-[2] bg-[#8B735B]">儲存變更</Button>
               </div>
             </form>
           </Card>
         </div>
       )}
-      <button onClick={() => setIsAdding(true)} className="fixed bottom-24 right-6 w-14 h-14 bg-[#A8B58F] text-white rounded-full flex items-center justify-center text-2xl soft-shadow z-[150]"><Icon name="plus" /></button>
+
+      {/* 懸浮新增按鈕 */}
+      <button 
+        type="button"
+        onClick={handleOpenAdd} 
+        className="fixed bottom-24 right-6 w-14 h-14 bg-[#A8B58F] text-white rounded-full flex items-center justify-center text-2xl soft-shadow z-[150] active:scale-90 transition-transform shadow-lg"
+      >
+        <Icon name="plus" />
+      </button>
     </div>
   );
 };
