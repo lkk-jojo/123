@@ -129,6 +129,10 @@ const App: React.FC = () => {
     setShowSyncModal(false);
   };
 
+  const triggerScheduleSwap = () => {
+    window.dispatchEvent(new CustomEvent('open-schedule-swap'));
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'schedule': return <SchedulePage />;
@@ -155,6 +159,16 @@ const App: React.FC = () => {
             <Icon name={tripId ? "users" : "cloud"} className="text-[10px]" />
             <span className="text-[10px] font-black">{tripId ? tripId : '備份'}</span>
           </button>
+          
+          {/* 行程交換按鈕：移至 Header 最右側，僅在行程分頁顯示 */}
+          {activeTab === 'schedule' && (
+            <button 
+              onClick={triggerScheduleSwap}
+              className="w-10 h-10 rounded-full bg-white border-2 border-[#E0E5D5] text-[#A8B58F] flex items-center justify-center active:scale-90 transition-all soft-shadow"
+            >
+              <Icon name="shuffle" className="text-xs" />
+            </button>
+          )}
         </div>
       </header>
 
