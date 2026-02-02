@@ -86,8 +86,8 @@ const SchedulePage: React.FC = () => {
   const categories: Category[] = ['attraction', 'food', 'transport', 'hotel', 'entertainment'];
 
   return (
-    <div className="flex flex-col gap-2"> {/* 整體 gap 縮小 (3 -> 2) */}
-      {/* 頂部日期選單：維持大尺寸，壓縮下邊距 */}
+    <div className="flex flex-col gap-1.5">
+      {/* 頂部日期選單：寬度高度縮小約 5% */}
       <div className="flex overflow-x-auto gap-2 pb-1.5 -mx-4 px-4 scrollbar-hide">
         {dates.map((date, idx) => {
           const isSelected = selectedDate === date;
@@ -95,64 +95,65 @@ const SchedulePage: React.FC = () => {
             <button
               key={date}
               onClick={() => setSelectedDate(date)}
-              className={`flex-shrink-0 w-16 h-[4.6rem] rounded-2xl border-2 flex flex-col items-center justify-center transition-all ${
+              className={`flex-shrink-0 w-[3.75rem] h-[4.3rem] rounded-2xl border-2 flex flex-col items-center justify-center transition-all ${
                 isSelected ? 'bg-[#A8B58F] border-[#A8B58F] text-white scale-105 soft-shadow' : 'bg-white border-[#E0E5D5]'
               }`}
             >
-              <span className="text-[9px] font-bold opacity-60 uppercase leading-none">D{idx + 1}</span>
-              <span className="text-xl font-black leading-none my-0.5">{date.split('-')[2]}</span>
-              <span className="text-[8px] uppercase font-bold opacity-60 leading-none">Feb</span>
+              <span className="text-[8.5px] font-bold opacity-60 uppercase leading-none">D{idx + 1}</span>
+              <span className="text-lg font-black leading-none my-0.5">{date.split('-')[2]}</span>
+              <span className="text-[7.5px] uppercase font-bold opacity-60 leading-none">Feb</span>
             </button>
           );
         })}
       </div>
 
-      {/* 天氣卡片：極致壓縮 Padding (3.5 -> 2) 與 Gap (3 -> 2) */}
-      <Card className="flex items-center justify-between bg-gradient-to-r from-[#87A2FB] to-[#B5C99A] text-white border-none relative overflow-hidden p-2.5">
+      {/* 天氣卡片：同步微縮 */}
+      <Card className="flex items-center justify-between bg-gradient-to-r from-[#87A2FB] to-[#B5C99A] text-white border-none relative overflow-hidden p-2">
         <div className="absolute -right-2 -bottom-1 opacity-20 text-5xl rotate-12"><Icon name="sun" /></div>
         <div className="flex items-center gap-2 relative z-10">
           <div className="text-xl">❄️</div>
           <div>
-            <h3 className="font-bold text-[11px] leading-tight">今日：晴</h3>
-            <p className="text-[9px] opacity-80">8°C / 2°C • 名古屋</p>
+            <h3 className="font-bold text-[10px] leading-tight">今日：晴</h3>
+            <p className="text-[8.5px] opacity-80">8°C / 2°C • 名古屋</p>
           </div>
         </div>
         <div className="text-right relative z-10 pr-1">
-          <p className="text-[8px] font-black uppercase tracking-widest opacity-70 leading-none">Status</p>
-          <p className="text-base font-black italic leading-tight">{countdownText}</p>
+          <p className="text-[7.5px] font-black uppercase tracking-widest opacity-70 leading-none">Status</p>
+          <p className="text-sm font-black italic leading-tight">{countdownText}</p>
         </div>
       </Card>
 
-      {/* 行程列表：壓縮垂直距離與 Padding */}
+      {/* 行程列表：壓縮垂直距離與 Padding (縮小 10%) */}
       <div className="relative pl-4 mt-0.5">
         <div className="absolute left-[23px] top-0 bottom-0 w-1 bg-[#E0E5D5] rounded-full"></div>
-        <div className="flex flex-col gap-[0.45rem]"> {/* 垂直間距縮小 30% (0.65 -> 0.45) */}
+        <div className="flex flex-col gap-[0.4rem]"> 
           {filteredItems.length > 0 ? filteredItems.map((item) => (
             <div key={item.id} className="relative flex gap-3 group">
               <div className="mt-2 w-5 h-5 rounded-full bg-white border-4 border-[#A8B58F] z-10 flex-shrink-0"></div>
-              <Card className="flex-grow p-2 relative group hover:border-[#A8B58F] transition-colors">
-                <button onClick={() => setEditingItem({ ...item })} className="absolute top-1 right-1 text-[#8B735B] opacity-0 group-hover:opacity-100 transition-opacity bg-[#F7F4EB] w-6 h-6 rounded-full flex items-center justify-center border border-[#E0E5D5] z-20">
-                  <Icon name="pen" className="text-[9px]" />
+              {/* Card Padding 從 p-2 降為 p-1.5 */}
+              <Card className="flex-grow p-1.5 relative group hover:border-[#A8B58F] transition-colors rounded-[1.5rem]">
+                <button onClick={() => setEditingItem({ ...item })} className="absolute top-1 right-1 text-[#8B735B] opacity-0 group-hover:opacity-100 transition-opacity bg-[#F7F4EB] w-5 h-5 rounded-full flex items-center justify-center border border-[#E0E5D5] z-20">
+                  <Icon name="pen" className="text-[8px]" />
                 </button>
                 <div className="flex justify-between items-start mb-0">
-                  <span className="text-[11px] font-black text-[#8B735B]">{item.time}</span>
+                  <span className="text-[10.5px] font-black text-[#8B735B]">{item.time}</span>
                   <Badge color={COLORS.categories[item.category as keyof typeof COLORS.categories] || '#A8B58F'}>
-                    <span className="text-[9px] leading-none">{CATEGORY_LABELS[item.category as Category] || item.category}</span>
+                    <span className="text-[8.5px] leading-none">{CATEGORY_LABELS[item.category as Category] || item.category}</span>
                   </Badge>
                 </div>
-                <h4 className="font-bold text-sm mb-0.5 leading-tight pr-6 text-[#5D534A]">{item.title}</h4>
-                <div className="flex justify-between items-end mt-1">
-                  <p className="text-[10px] text-opacity-60 flex items-center gap-1 italic max-w-[65%]">
-                    <Icon name="location-dot" className="text-[#A8B58F] text-[9px]" /> <span className="truncate">{item.location}</span>
+                <h4 className="font-bold text-[13px] mb-0.5 leading-tight pr-5 text-[#5D534A]">{item.title}</h4>
+                <div className="flex justify-between items-end mt-0.5">
+                  <p className="text-[9.5px] text-opacity-60 flex items-center gap-1 italic max-w-[65%]">
+                    <Icon name="location-dot" className="text-[#A8B58F] text-[8px]" /> <span className="truncate">{item.location}</span>
                   </p>
-                  <button onClick={() => openGoogleMaps(item.location)} className="flex items-center gap-1 px-2 py-0.5 bg-[#F7F4EB] hover:bg-[#A8B58F] hover:text-white text-[#8B735B] rounded-full text-[8px] font-black transition-all border border-[#E0E5D5]">
+                  <button onClick={() => openGoogleMaps(item.location)} className="flex items-center gap-1 px-1.5 py-0.5 bg-[#F7F4EB] hover:bg-[#A8B58F] hover:text-white text-[#8B735B] rounded-full text-[7.5px] font-black transition-all border border-[#E0E5D5]">
                     <Icon name="map-location-dot" /> <span>導航</span>
                   </button>
                 </div>
               </Card>
             </div>
           )) : (
-            <div className="py-6 text-center opacity-50 italic text-[11px]">暫無行程</div>
+            <div className="py-6 text-center opacity-50 italic text-[10px]">暫無行程</div>
           )}
         </div>
       </div>
@@ -180,7 +181,7 @@ const SchedulePage: React.FC = () => {
           </Card>
         </div>
       )}
-      <button onClick={() => setIsAdding(true)} className="fixed bottom-20 right-5 w-12 h-12 bg-[#8B735B] text-white rounded-full flex items-center justify-center text-xl soft-shadow z-[110] active:scale-90 transition-transform">
+      <button onClick={() => setIsAdding(true)} className="fixed bottom-24 right-5 w-11 h-11 bg-[#8B735B] text-white rounded-full flex items-center justify-center text-lg soft-shadow z-[110] active:scale-90 transition-transform">
         <Icon name="plus" />
       </button>
     </div>
